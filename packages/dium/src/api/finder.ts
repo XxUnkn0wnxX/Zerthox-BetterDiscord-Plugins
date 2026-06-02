@@ -2,7 +2,6 @@ import * as Filters from "./filters";
 import { mappedProxy } from "../utils/general";
 import type { Query, TypeOrPredicate } from "./filters";
 import type { Module, Exports } from "../require";
-import { Stories } from "../components/story";
 
 export type ModuleFilter = (exports: Exports, module?: Module, id?: string) => boolean;
 
@@ -74,12 +73,12 @@ export const all = {
 /** Resolves the key corresponding to the value matching the filter function. */
 export const resolveKey = <T, K extends string = string>(target: Record<K, T>, filter: Filter): [Record<K, T>, K] => [
     target,
-    (target ? Object.entries(target).find(([, value]) => filter(value))?.[0] : null) as K,
+    (target ? Object.entries(target).find(([, value]) => filter(value as any))?.[0] : null) as K,
 ];
 
 /** Resolves the key corresponding to the value matching the filter function. */
 export const findWithKey = <T, K extends string = string>(filter: Filter): [Record<K, T>, K] =>
-    resolveKey(find(Filters.byEntry(filter), { resolve: false }), filter);
+    resolveKey(find(Filters.byEntry(filter)), filter);
 
 type Mapping = Record<string, (entry: any) => boolean>;
 type Mapped<M extends Mapping> = { [K in keyof M]: any };
@@ -96,7 +95,7 @@ export const demangle = <M extends Mapping>(mapping: M, required?: (keyof M)[], 
     const req = required ?? Object.keys(mapping);
 
     const found = find(
-        (target) =>
+        (target: any) =>
             Filters.checkObjectValues(target)
             && req.every((req) => Object.values(target).some((value) => mapping[req](value))),
     );
@@ -107,7 +106,7 @@ export const demangle = <M extends Mapping>(mapping: M, required?: (keyof M)[], 
               Object.fromEntries(
                   Object.entries(mapping).map(([key, filter]) => [
                       key,
-                      Object.entries(found ?? {}).find(([, value]) => filter(value))?.[0],
+                      Object.entries(found ?? {}).find(([, value]) => filter(value))?.[0] as any,
                   ]),
               ),
           ) as any)
@@ -122,18 +121,27 @@ export const demangle = <M extends Mapping>(mapping: M, required?: (keyof M)[], 
 let controller = new AbortController();
 
 /** Waits for a lazy loaded module. */
-// TODO: waitFor with callback that is skipped when aborted?
-export const waitFor = <T>(filter: Filter, { resolve = true, entries = false }: FindOptions = {}): Promise<T> =>
+export const waitFor = <T>(
+    filter: Filter,
+    { resolve = true, entries = false }: FindOptions = {},
+): Promise<T | undefined> =>
     BdApi.Webpack.waitForModule(filter, {
         signal: controller.signal,
         defaultExport: resolve,
         searchExports: entries,
     });
 
-/** Waits for a lazy loaded module. */
-export const waitForWithKey = async <T, K extends string = string>(filter: Filter): Promise<[Record<K, T>, K]> => {
-    const target: Record<K, T> = await waitFor(Filters.byEntry(filter), { resolve: false });
-    return resolveKey(target, filter);
+/** Waits for a lazy loaded module with abort checking. */
+export const waitForChecked = async <T, R>(
+    filter: Filter,
+    options: FindOptions = {},
+    callback: (result: T) => R,
+): Promise<R | undefined> => {
+    const signal = controller.signal;
+    const result = await waitFor<T>(filter, options);
+    if (!signal.aborted) {
+        return callback(result as T);
+    }
 };
 
 /** Aborts search for any lazy loaded modules. */
@@ -148,6 +156,3 @@ export const abort = (): void => {
 /** Finds a story module using class name prefixes. */
 export const byClassNames = (...classNames: string[]): Record<string, string> =>
     find(Filters.byClassNames(...classNames), { entries: true });
-
-/** Finds a story module using its title. */
-export const byStoryTitle = (title: string): Stories => find(Filters.byStoryTitle(title), { entries: true });

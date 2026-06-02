@@ -1,7 +1,4 @@
 import { Finder } from "../api";
-import { Stories } from "./story";
-
-export const FormStories: Stories = /* @__PURE__ */ Finder.byStoryTitle("Form Components");
 
 export type FormNoticeType = "BRAND" | "CUSTOM" | "DANGER" | "PRIMARY" | "SUCCESS" | "WARNING";
 

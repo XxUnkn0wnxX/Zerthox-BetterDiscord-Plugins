@@ -1,6 +1,6 @@
 /**
  * @name OnlineFriendCount
- * @version 3.3.1
+ * @version 3.3.2
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Adds the old online friend count and similar counters back to server list. Because nostalgia.
@@ -47,7 +47,7 @@ WScript.Quit();
 
 'use strict';
 
-let meta = null;
+let meta;
 const getMeta = () => {
     if (meta) {
         return meta;
@@ -246,6 +246,14 @@ const { Link} = /* @__PURE__ */ demangle(mapping, [
 
 const { Menu, Group: MenuGroup, CheckboxItem: MenuCheckboxItem} = BdApi.ContextMenu;
 
+const EMPTY = Symbol();
+const useOnceRef = (init) => {
+    const ref = React.useRef(EMPTY);
+    if (ref.current === EMPTY) {
+        ref.current = init();
+    }
+    return ref;
+};
 const FCHook = ({ children: { type, props }, callback }) => {
     const result = type(props);
     return callback(result, props) ?? result;
@@ -286,6 +294,7 @@ const queryTreeForParent = (tree, predicate) => {
                 return true;
             }
         }
+        return false;
     });
     return [parent, childIndex];
 };
@@ -354,6 +363,7 @@ class SettingsStore {
     listeners = new Set();
     constructor(defaults, onLoad) {
         this.defaults = defaults;
+        this.current = { ...defaults };
         this.onLoad = onLoad;
     }
     load() {
@@ -389,8 +399,8 @@ class SettingsStore {
     useCurrent() {
         return React.useSyncExternalStore(this.addListenerEffect, this.getCurrent);
     }
-    useSelector(selector, deps = null, compare = Object.is) {
-        const state = React.useRef(null);
+    useSelector(selector, deps, compare = Object.is) {
+        const state = useOnceRef(() => selector(this.current));
         const snapshot = React.useCallback(() => {
             const next = selector(this.current);
             if (!compare(state.current, next)) {
@@ -448,9 +458,9 @@ const createPlugin = (plugin) => (meta) => {
             log("Disabled");
         },
         getSettingsPanel: SettingsPanel
-            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : null },
+            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : undefined },
                 React.createElement(SettingsPanel, null)))
-            : null,
+            : undefined,
     };
 };
 
@@ -491,7 +501,7 @@ const CountContextMenu = (props) => {
             React.createElement(MenuCheckboxItem, { id: "interval", label: "Auto rotate", checked: settings.interval, action: () => setSettings({ interval: !settings.interval }) }))));
 };
 
-const css = ".item-OnlineFriendCount{color:var(--channels-default);text-align:center;text-transform:uppercase;font-size:10px;font-weight:500;line-height:1.3;width:70px;word-wrap:normal;white-space:nowrap}.link-OnlineFriendCount{cursor:pointer}.link-OnlineFriendCount:hover{color:var(--interactive-hover)}";
+const css = ".item-OnlineFriendCount{color:var(--channels-default);text-align:center;text-transform:uppercase;font-size:10px;font-weight:500;line-height:1.3;width:70px;word-wrap:normal;white-space:nowrap}.link-OnlineFriendCount{cursor:pointer}.link-OnlineFriendCount:hover{color:var(--interactive-text-hover)}";
 const styles = {
     item: "item-OnlineFriendCount",
     link: "link-OnlineFriendCount"
@@ -518,14 +528,14 @@ const CountersContainer = () => {
     const { interval, ...settings } = Settings.useCurrent();
     const counters = useCounters().filter(({ type }) => settings[type]);
     const [current, setCurrent] = React.useState(0);
-    const callback = React.useRef(null);
+    const next = React.useRef((current + 1) % counters.length);
     React.useEffect(() => {
-        callback.current = () => setCurrent((current + 1) % counters.length);
+        next.current = (current + 1) % counters.length;
     }, [current, counters.length]);
     React.useEffect(() => {
         if (interval && counters.length > 1) {
             setCurrent(0);
-            const id = setInterval(() => callback.current(), 5000);
+            const id = setInterval(() => setCurrent(next.current), 5000);
             return () => clearInterval(id);
         }
     }, [interval, counters.length]);

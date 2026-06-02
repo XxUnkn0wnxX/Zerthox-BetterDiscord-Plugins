@@ -1,8 +1,9 @@
 {
     "name": "NoReplyMention",
     "author": "Zerthox",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "Suppresses reply mentions.",
+    "type": "module",
     "dependencies": {
         "dium": "*"
     }

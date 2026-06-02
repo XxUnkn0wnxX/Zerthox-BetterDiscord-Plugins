@@ -1,6 +1,6 @@
 /**
  * @name NoReplyMention
- * @version 0.2.3
+ * @version 0.2.4
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Suppresses reply mentions.
@@ -47,7 +47,7 @@ WScript.Quit();
 
 'use strict';
 
-let meta = null;
+let meta;
 const getMeta = () => {
     if (meta) {
         return meta;
@@ -232,16 +232,16 @@ const createPlugin = (plugin) => (meta) => {
             log("Disabled");
         },
         getSettingsPanel: SettingsPanel
-            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : null },
+            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : undefined },
                 React.createElement(SettingsPanel, null)))
-            : null,
+            : undefined,
     };
 };
 
 const ReplyActions = demangle({
     createPendingReply: bySource$1("shouldMention", "CREATE_PENDING_REPLY"),
     deletePendingReply: bySource$1("DELETE_PENDING_REPLY"),
-}, null, true);
+}, undefined, true);
 const index = createPlugin({
     start() {
         before(ReplyActions, "createPendingReply", ({ args: [options] }) => {

@@ -33,7 +33,7 @@ const getGuildsOwner = () => {
     return null;
 };
 
-const triggerRerender = async (guildsFiber: Fiber) => {
+const triggerRerender = async (guildsFiber: Fiber | null) => {
     if (guildsFiber && (await Utils.forceFullRerender(guildsFiber))) {
         Logger.log("Rerendered guilds");
     } else {
@@ -43,7 +43,7 @@ const triggerRerender = async (guildsFiber: Fiber) => {
 
 export default createPlugin({
     start() {
-        let FolderIcon: FolderIcon = null;
+        let FolderIcon: FolderIcon | null = null;
         const guildsOwner = getGuildsOwner();
 
         // patch folder icon wrapper
@@ -102,8 +102,10 @@ export default createPlugin({
         });
 
         // patch folder settings class
-        Finder.waitFor<FolderSettingsClass>(Filters.bySource(".folderName", ".onClose"), { entries: true }).then(
-            (FolderSettings) => {
+        Finder.waitForChecked(
+            Filters.bySource(".folderName", ".onClose"),
+            { entries: true },
+            (FolderSettings: FolderSettingsClass) => {
                 Patcher.after(FolderSettings.prototype, "render", renderFolderSettingsPatch, {
                     name: "FolderSettings render",
                 });

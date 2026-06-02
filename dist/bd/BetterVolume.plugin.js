@@ -1,6 +1,6 @@
 /**
  * @name BetterVolume
- * @version 3.2.3
+ * @version 3.2.4
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Set user volume values manually instead of using a slider. Allows setting volumes higher than 200%.
@@ -47,7 +47,7 @@ WScript.Quit();
 
 'use strict';
 
-let meta = null;
+let meta;
 const getMeta = () => {
     if (meta) {
         return meta;
@@ -146,11 +146,18 @@ const demangle = (mapping, required, proxy = false) => {
         ]));
 };
 let controller = new AbortController();
-const waitFor = (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack.waitForModule(filter, {
+const waitFor = async (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack.waitForModule(filter, {
     signal: controller.signal,
     defaultExport: resolve,
     searchExports: entries,
 });
+const waitForChecked = async (filter, options = {}, callback) => {
+    const signal = controller.signal;
+    const result = await waitFor(filter, options);
+    if (!signal.aborted) {
+        return callback(result);
+    }
+};
 const abort = () => {
     controller.abort();
     controller = new AbortController();
@@ -233,6 +240,15 @@ const FormDivider = /* @__PURE__ */ bySource(["marginTop:", (source) => /{classN
 
 const { Item: MenuItem} = BdApi.ContextMenu;
 
+const EMPTY = Symbol();
+const useOnceRef = (init) => {
+    const ref = React.useRef(EMPTY);
+    if (ref.current === EMPTY) {
+        ref.current = init();
+    }
+    return ref;
+};
+
 const SettingsContainer = ({ name, children, onReset }) => (React.createElement("div", null,
     children,
     onReset ? (React.createElement(React.Fragment, null,
@@ -249,6 +265,7 @@ class SettingsStore {
     listeners = new Set();
     constructor(defaults, onLoad) {
         this.defaults = defaults;
+        this.current = { ...defaults };
         this.onLoad = onLoad;
     }
     load() {
@@ -284,8 +301,8 @@ class SettingsStore {
     useCurrent() {
         return React.useSyncExternalStore(this.addListenerEffect, this.getCurrent);
     }
-    useSelector(selector, deps = null, compare = Object.is) {
-        const state = React.useRef(null);
+    useSelector(selector, deps, compare = Object.is) {
+        const state = useOnceRef(() => selector(this.current));
         const snapshot = React.useCallback(() => {
             const next = selector(this.current);
             if (!compare(state.current, next)) {
@@ -343,9 +360,9 @@ const createPlugin = (plugin) => (meta) => {
             log("Disabled");
         },
         getSettingsPanel: SettingsPanel
-            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : null },
+            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : undefined },
                 React.createElement(SettingsPanel, null)))
-            : null,
+            : undefined,
     };
 };
 
@@ -445,7 +462,7 @@ const postConnectionOpenHandler = (_action) => {
         warn("Failed to find AudioSettingsManager");
     }
 };
-let originalHandler = null;
+let originalHandler;
 const wrappedSettingsManagerHandler = (action) => {
     const { userId, volume, context } = action;
     const isOverride = volume > MAX_VOLUME_AMP;
@@ -498,8 +515,8 @@ const useUserVolumeItemFilter = bySource$1("user-volume");
 const index = createPlugin({
     start() {
         handleVolumeSync();
-        waitFor(useUserVolumeItemFilter, { resolve: false }).then((result) => {
-            const useUserVolumeItem = resolveKey(result, useUserVolumeItemFilter);
+        waitForChecked(useUserVolumeItemFilter, { resolve: false }, (exported) => {
+            const useUserVolumeItem = resolveKey(exported, useUserVolumeItemFilter);
             after(...useUserVolumeItem, ({ args: [userId, context], result }) => {
                 if (result) {
                     const volume = MediaEngineStore.getLocalVolume(userId, context);

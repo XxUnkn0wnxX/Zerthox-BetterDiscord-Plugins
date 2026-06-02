@@ -16,9 +16,11 @@ export default createPlugin({
         handleVolumeSync();
 
         // add number input to user volume item
-        Finder.waitFor(useUserVolumeItemFilter, { resolve: false }).then(
-            (result: Record<string, UseUserVolumeItem>) => {
-                const useUserVolumeItem = Finder.resolveKey(result, useUserVolumeItemFilter);
+        Finder.waitForChecked(
+            useUserVolumeItemFilter,
+            { resolve: false },
+            (exported: Record<string, UseUserVolumeItem>) => {
+                const useUserVolumeItem = Finder.resolveKey(exported, useUserVolumeItemFilter);
                 Patcher.after(
                     ...useUserVolumeItem,
                     ({ args: [userId, context], result }) => {
