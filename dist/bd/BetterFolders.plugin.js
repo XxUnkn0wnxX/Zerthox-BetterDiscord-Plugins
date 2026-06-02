@@ -588,6 +588,10 @@ const index = createPlugin({
         let FolderIcon = null;
         const guildsOwner = getGuildsOwner();
         waitFor(byEntry(folderIconWrapperFilter), { resolve: false }).then((result) => {
+            if (!result) {
+                error("Unable to find FolderIconWrapper module");
+                return;
+            }
             const FolderIconWrapper = resolveKey(result, folderIconWrapperFilter);
             if (!FolderIconWrapper[0] || !FolderIconWrapper[1]) {
                 error("Unable to find FolderIconWrapper module");

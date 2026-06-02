@@ -52,6 +52,11 @@ export default createPlugin({
             Filters.byEntry(folderIconWrapperFilter),
             { resolve: false },
         ).then((result) => {
+            if (!result) {
+                Logger.error("Unable to find FolderIconWrapper module");
+                return;
+            }
+
             const FolderIconWrapper = Finder.resolveKey(result, folderIconWrapperFilter);
             if (!FolderIconWrapper[0] || !FolderIconWrapper[1]) {
                 Logger.error("Unable to find FolderIconWrapper module");
