@@ -27,6 +27,9 @@
         "node": "^24.0.0"
     },
     "packageManager": "npm@11.0.0",
+    "overrides": {
+        "esbuild": "0.26.0"
+    },
     "dependencies": {
         "@types/betterdiscord": "github:zerthox/betterdiscord-types",
         "@types/node": "^24.12.2",

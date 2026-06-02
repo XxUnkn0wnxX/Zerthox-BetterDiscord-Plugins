@@ -146,7 +146,7 @@ const demangle = (mapping, required, proxy = false) => {
         ]));
 };
 let controller = new AbortController();
-const waitFor = async (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack.waitForModule(filter, {
+const waitFor = (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack.waitForModule(filter, {
     signal: controller.signal,
     defaultExport: resolve,
     searchExports: entries,

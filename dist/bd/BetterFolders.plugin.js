@@ -47,7 +47,7 @@ WScript.Quit();
 
 'use strict';
 
-let meta = null;
+let meta;
 const getMeta = () => {
     if (meta) {
         return meta;
@@ -118,6 +118,13 @@ const waitFor = (filter, { resolve = true, entries = false } = {}) => BdApi.Webp
     defaultExport: resolve,
     searchExports: entries,
 });
+const waitForChecked = async (filter, options = {}, callback) => {
+    const signal = controller.signal;
+    const result = await waitFor(filter, options);
+    if (!signal.aborted) {
+        return callback(result);
+    }
+};
 const abort = () => {
     controller.abort();
     controller = new AbortController();
@@ -201,6 +208,14 @@ const FormDivider = /* @__PURE__ */ bySource(["marginTop:", (source) => /{classN
 
 const TextInput = /* @__PURE__ */ bySource(["placeholder", "maxLength", "clearable"], { entries: true });
 
+const EMPTY = Symbol();
+const useOnceRef = (init) => {
+    const ref = React.useRef(EMPTY);
+    if (ref.current === EMPTY) {
+        ref.current = init();
+    }
+    return ref;
+};
 const replaceElement = (target, replace) => {
     target.type = replace.type;
     target.key = replace.key ?? target.key;
@@ -233,6 +248,7 @@ const queryTreeForParent = (tree, predicate) => {
                 return true;
             }
         }
+        return false;
     });
     return [parent, childIndex];
 };
@@ -301,6 +317,7 @@ class SettingsStore {
     listeners = new Set();
     constructor(defaults, onLoad) {
         this.defaults = defaults;
+        this.current = { ...defaults };
         this.onLoad = onLoad;
     }
     load() {
@@ -336,8 +353,8 @@ class SettingsStore {
     useCurrent() {
         return React.useSyncExternalStore(this.addListenerEffect, this.getCurrent);
     }
-    useSelector(selector, deps = null, compare = Object.is) {
-        const state = React.useRef(null);
+    useSelector(selector, deps, compare = Object.is) {
+        const state = useOnceRef(() => selector(this.current));
         const snapshot = React.useCallback(() => {
             const next = selector(this.current);
             if (!compare(state.current, next)) {
@@ -395,9 +412,9 @@ const createPlugin = (plugin) => (meta) => {
             log("Disabled");
         },
         getSettingsPanel: SettingsPanel
-            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : null },
+            ? () => (React.createElement(SettingsContainer, { name: meta.name, onReset: Settings ? () => Settings.reset() : undefined },
                 React.createElement(SettingsPanel, null)))
-            : null,
+            : undefined,
     };
 };
 
@@ -412,7 +429,7 @@ const styles = {
 };
 
 const folderStyles = byKeys(["folderIcon", "folderIconWrapper", "folderPreviewWrapper"]);
-const renderIcon = (data) => (React.createElement("div", { className: styles.customIcon, style: { backgroundImage: data?.icon ? `url(${data.icon})` : null } }));
+const renderIcon = (data) => (React.createElement("div", { className: styles.customIcon, style: { backgroundImage: data?.icon ? `url(${data.icon})` : undefined } }));
 const BetterFolderIcon = ({ data, childProps, FolderIcon }) => {
     if (FolderIcon) {
         const result = FolderIcon(childProps);
@@ -532,7 +549,7 @@ const renderFolderSettingsPatch = ({ context, result, }) => {
     if (iconType === "custom" ) {
         const tree = SortedGuildStore.getGuildsTree();
         children.push(React.createElement("div", { style: { marginTop: 20 } },
-            React.createElement(BetterFolderUploader, { icon: state.icon, always: state.always, folderNode: tree.nodes[folderId], onChange: ({ icon, always }) => context.setState({ icon, always }) })));
+            React.createElement(BetterFolderUploader, { icon: state.icon ?? "", always: state.always, folderNode: tree.nodes[folderId], onChange: ({ icon, always }) => context.setState({ icon, always }) })));
     }
 };
 
@@ -598,7 +615,7 @@ const index = createPlugin({
                 }
             }
         });
-        waitFor(bySource$1(".folderName", ".onClose"), { entries: true }).then((FolderSettings) => {
+        waitForChecked(bySource$1(".folderName", ".onClose"), { entries: true }, (FolderSettings) => {
             after(FolderSettings.prototype, "render", renderFolderSettingsPatch, {
                 name: "FolderSettings render",
             });
