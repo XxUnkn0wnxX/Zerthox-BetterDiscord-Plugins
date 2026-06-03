@@ -665,9 +665,21 @@ const index = createPlugin({
             after(FolderSettings.prototype, "render", renderFolderSettingsPatch, {
                 name: "FolderSettings render",
             });
+            const originalComponentDidMount = FolderSettings.prototype.componentDidMount;
+            if (!(originalComponentDidMount instanceof Function)) {
+                const componentDidMountNoop = function componentDidMountNoop() { };
+                FolderSettings.prototype.componentDidMount = componentDidMountNoop;
+                addManual(() => {
+                    if (originalComponentDidMount === undefined) {
+                        delete FolderSettings.prototype.componentDidMount;
+                    }
+                    else {
+                        FolderSettings.prototype.componentDidMount = originalComponentDidMount;
+                    }
+                });
+            }
             after(FolderSettings.prototype, "componentDidMount", mountFolderSettingsPatch, {
                 name: "FolderSettings mount",
-                force: true,
             });
         });
     },

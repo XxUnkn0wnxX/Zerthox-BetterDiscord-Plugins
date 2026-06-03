@@ -1,4 +1,5 @@
 node_modules/
 tmp/
 AGENTS.md
+AGENTS.MD
 .venv/
