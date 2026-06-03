@@ -1,6 +1,6 @@
 import { React } from "dium";
 import { GuildsTreeFolder } from "@dium/modules";
-import { FormSwitch } from "@dium/components";
+import { BD, Flex, Button, ImageInput, margins } from "@dium/components";
 import { FolderData } from "./settings";
 import { renderIcon } from "./icon";
 
@@ -9,62 +9,44 @@ export interface BetterFolderUploaderProps extends FolderData {
     onChange(data: FolderData): void;
 }
 
-const rowStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-    flexWrap: "wrap",
-};
-
-const uploadLabelStyle: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 32,
-    padding: "0 14px",
-    borderRadius: 4,
-    border: "1px solid var(--button-outline-brand-border, var(--border-subtle))",
-    cursor: "pointer",
-};
-
-const previewLabelStyle: React.CSSProperties = {
-    color: "var(--text-muted)",
-};
-
 export const BetterFolderUploader = ({ icon, always, onChange }: BetterFolderUploaderProps): React.JSX.Element => {
-    const onFileChange = ({ currentTarget }: React.ChangeEvent<HTMLInputElement>) => {
-        const file = currentTarget.files?.[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            if (typeof reader.result === "string") {
-                onChange({ icon: reader.result, always });
-            }
-        });
-        reader.readAsDataURL(file);
-
-        currentTarget.value = "";
+    const Components = {
+        Flex: Flex as typeof Flex | undefined,
+        Button: Button as typeof Button | undefined,
+        SwitchInput: BD.SwitchInput as typeof BD.SwitchInput | undefined,
+        Text: BD.Text as React.ComponentType<any> | undefined,
+        ImageInput: ImageInput as typeof ImageInput | undefined,
+        margins: margins as typeof margins | undefined,
+        SettingItem: BD.SettingItem as typeof BD.SettingItem | undefined,
     };
 
     return (
         <>
-            <div style={rowStyle}>
-                <label style={uploadLabelStyle}>
-                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} />
-                    Upload Image
-                </label>
-                <span style={previewLabelStyle}>Preview:</span>
-                {renderIcon({ icon, always: true })}
-            </div>
-            <FormSwitch
-                checked={always}
-                onChange={(checked) => onChange({ icon, always: checked })}
-                label="Always display icon"
-            />
+        {Components.Flex && Components.Button && Components.ImageInput && Components.Text && Components.margins
+            ? (
+                <Components.Flex align={Components.Flex.Align.CENTER} className={Components.margins.marginBottom20}>
+                    <Components.Button color={Components.Button.Colors.WHITE} look={Components.Button.Looks.OUTLINED}>
+                        Upload Image
+                        <Components.ImageInput onChange={(img: string) => onChange({ icon: img, always })} />
+                    </Components.Button>
+                    <Components.Text variant="text-sm/normal" style={{ color: "var(--text-muted)", margin: "0 10px 0 40px" }}>
+                        Preview:
+                    </Components.Text>
+                    {renderIcon({ icon, always: true })}
+                </Components.Flex>
+            )
+            : renderIcon({ icon, always: true })}
+        {Components.SwitchInput && Components.SettingItem
+            ? (
+                <Components.SettingItem id="alwaysDisplayIcon" name="Always display icon" inline>
+                    <Components.SwitchInput
+                        id="alwaysDisplayIcon"
+                        value={always}
+                        onChange={(checked) => onChange({ icon, always: checked })}
+                    />
+                </Components.SettingItem>
+            )
+            : null}
         </>
     );
 };

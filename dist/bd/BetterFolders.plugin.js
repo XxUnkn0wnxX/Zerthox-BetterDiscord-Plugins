@@ -63,18 +63,6 @@ const setMeta = (newMeta) => {
 const load = (key) => BdApi.Data.load(getMeta().name, key);
 const save = (key, value) => BdApi.Data.save(getMeta().name, key, value);
 
-const checkObjectValues = (target) => target !== window && target instanceof Object && target.constructor?.prototype !== target;
-const byEntry = (filter, every = false) => {
-    return ((target, ...args) => {
-        if (checkObjectValues(target)) {
-            const values = Object.values(target);
-            return values.length > 0 && values[every ? "every" : "some"]((value) => filter(value, ...args));
-        }
-        else {
-            return false;
-        }
-    });
-};
 const byName$1 = (name) => {
     return (target) => (target?.displayName ?? target?.constructor?.displayName) === name;
 };
@@ -108,10 +96,6 @@ const find = (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack
 const byName = (name, options) => find(byName$1(name), options);
 const byKeys = (keys, options) => find(byKeys$1(...keys), options);
 const bySource = (contents, options) => find(bySource$1(...contents), options);
-const resolveKey = (target, filter) => [
-    target,
-    (target ? Object.entries(target).find(([, value]) => filter(value))?.[0] : null),
-];
 let controller = new AbortController();
 const waitFor = (filter, { resolve = true, entries = false } = {}) => BdApi.Webpack.waitForModule(filter, {
     signal: controller.signal,
@@ -134,7 +118,6 @@ const COLOR = "#3a71c1";
 const print = (output, ...data) => output(`%c[${getMeta().name}] %c${getMeta().version ? `(v${getMeta().version})` : ""}`, `color: ${COLOR}; font-weight: 700;`, "color: #666; font-size: .8em;", ...data);
 const log = (...data) => print(console.log, ...data);
 const warn = (...data) => print(console.warn, ...data);
-const error = (...data) => print(console.error, ...data);
 
 let manualPatches = [];
 const addManual = (cancel, name) => {
@@ -195,18 +178,20 @@ const ExpandedGuildFolderStore =
 
 const { React } = BdApi;
 
+const { Text, RadioInput, SwitchInput, SettingItem} = BdApi.Components;
+
 const Button = /* @__PURE__ */ byKeys(["Colors", "Link"], { entries: true });
 
 const Flex = /* @__PURE__ */ byKeys(["Child", "Justify", "Align"], { entries: true });
 
-const FormSwitch = /* @__PURE__ */ bySource(["checked:", "innerRef:", "layout:"], {
-    entries: true,
-});
 const FormDivider = /* @__PURE__ */ bySource(["marginTop:", (source) => /{className:.,gap:.}=/.test(source)], {
     entries: true,
 });
 
+const margins = /* @__PURE__ */ byKeys(["marginBottom40", "marginTop4"]);
+
 const TextInput = /* @__PURE__ */ bySource(["placeholder", "maxLength", "clearable"], { entries: true });
+const ImageInput = /* @__PURE__ */ find((target) => typeof target.defaultProps?.multiple === "boolean" && typeof target.defaultProps?.maxFileSizeBytes === "number");
 
 const EMPTY = Symbol();
 const useOnceRef = (init) => {
@@ -215,11 +200,6 @@ const useOnceRef = (init) => {
         ref.current = init();
     }
     return ref;
-};
-const replaceElement = (target, replace) => {
-    target.type = replace.type;
-    target.key = replace.key ?? target.key;
-    target.props = replace.props;
 };
 const queryTree = (node, predicate) => {
     const worklist = [node].flat();
@@ -423,90 +403,37 @@ const Settings = createSettings({
     folders: {},
 });
 
-const css = ".customIcon-BetterFolders{box-sizing:border-box;border-radius:var(--radius-lg);width:var(--guildbar-folder-size);height:var(--guildbar-folder-size);padding:var(--custom-folder-preview-padding);background-size:contain;background-position:center;background-repeat:no-repeat}";
+const css = ".customIcon-BetterFolders{box-sizing:border-box;display:block;flex:0 0 auto;width:40px;height:40px;border-radius:var(--radius-lg);background-size:cover;background-position:center;background-repeat:no-repeat}.customIcon-BetterFolders[data-better-folders-custom-icon]{position:absolute;inset:0;width:100%;height:100%}";
 const styles = {
     customIcon: "customIcon-BetterFolders"
 };
 
-const folderStyles = byKeys(["folderIcon", "folderIconWrapper", "folderPreviewWrapper"]);
+byKeys(["folderIcon", "folderIconWrapper", "folderPreviewWrapper"]);
 const renderIcon = (data) => (React.createElement("div", { className: styles.customIcon, style: { backgroundImage: data?.icon ? `url(${data.icon})` : undefined } }));
-const BetterFolderIcon = ({ data, childProps, FolderIcon }) => {
-    if (FolderIcon) {
-        const result = FolderIcon(childProps);
-        if (data?.icon) {
-            const replace = renderIcon(data);
-            const iconWrapper = queryTree(result, (node) => node?.props?.className === folderStyles.folderIconWrapper);
-            if (iconWrapper) {
-                replaceElement(iconWrapper, replace);
-            }
-            else {
-                error("Failed to find folderIconWrapper element");
-            }
-            if (data.always) {
-                const previewWrapper = queryTree(result, (node) => node?.props?.className === folderStyles.folderPreviewWrapper);
-                if (previewWrapper) {
-                    replaceElement(previewWrapper, replace);
-                }
-                else {
-                    error("Failed to find folderPreviewWrapper element");
-                }
-            }
-        }
-        return result;
-    }
-    else {
-        return null;
-    }
-};
-const compareFolderData = (a, b) => a?.icon === b?.icon && a?.always === b?.always;
-const ConnectedBetterFolderIcon = ({ folderId, ...props }) => {
-    const data = Settings.useSelector((current) => current.folders[folderId], [folderId], compareFolderData);
-    return React.createElement(BetterFolderIcon, { data: data, ...props });
-};
 
-const rowStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-    flexWrap: "wrap",
-};
-const uploadLabelStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 32,
-    padding: "0 14px",
-    borderRadius: 4,
-    border: "1px solid var(--button-outline-brand-border, var(--border-subtle))",
-    cursor: "pointer",
-};
-const previewLabelStyle = {
-    color: "var(--text-muted)",
-};
 const BetterFolderUploader = ({ icon, always, onChange }) => {
-    const onFileChange = ({ currentTarget }) => {
-        const file = currentTarget.files?.[0];
-        if (!file) {
-            return;
-        }
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            if (typeof reader.result === "string") {
-                onChange({ icon: reader.result, always });
-            }
-        });
-        reader.readAsDataURL(file);
-        currentTarget.value = "";
+    const Components = {
+        Flex: Flex,
+        Button: Button,
+        SwitchInput: SwitchInput,
+        Text: Text,
+        ImageInput: ImageInput,
+        margins: margins,
+        SettingItem: SettingItem,
     };
     return (React.createElement(React.Fragment, null,
-        React.createElement("div", { style: rowStyle },
-            React.createElement("label", { style: uploadLabelStyle },
-                React.createElement("input", { type: "file", accept: "image/*", style: { display: "none" }, onChange: onFileChange }),
-                "Upload Image"),
-            React.createElement("span", { style: previewLabelStyle }, "Preview:"),
-            renderIcon({ icon})),
-        React.createElement(FormSwitch, { checked: always, onChange: (checked) => onChange({ icon, always: checked }), label: "Always display icon" })));
+        Components.Flex && Components.Button && Components.ImageInput && Components.Text && Components.margins
+            ? (React.createElement(Components.Flex, { align: Components.Flex.Align.CENTER, className: Components.margins.marginBottom20 },
+                React.createElement(Components.Button, { color: Components.Button.Colors.WHITE, look: Components.Button.Looks.OUTLINED },
+                    "Upload Image",
+                    React.createElement(Components.ImageInput, { onChange: (img) => onChange({ icon: img, always }) })),
+                React.createElement(Components.Text, { variant: "text-sm/normal", style: { color: "var(--text-muted)", margin: "0 10px 0 40px" } }, "Preview:"),
+                renderIcon({ icon})))
+            : renderIcon({ icon}),
+        Components.SwitchInput && Components.SettingItem
+            ? (React.createElement(Components.SettingItem, { id: "alwaysDisplayIcon", name: "Always display icon", inline: true },
+                React.createElement(Components.SwitchInput, { id: "alwaysDisplayIcon", value: always, onChange: (checked) => onChange({ icon, always: checked }) })))
+            : null));
 };
 
 const mountFolderSettingsPatch = ({ context, }) => {
@@ -518,12 +445,14 @@ const mountFolderSettingsPatch = ({ context, }) => {
     const original = context.handleSubmit;
     context.handleSubmit = (...args) => {
         const result = original(...args);
-        const { folders } = Settings.current;
-        if (state.iconType === "custom"  && state.icon) {
-            folders[folderId] = { icon: state.icon, always: state.always };
+        const currentState = context.state;
+        const iconType = currentState.iconType ?? (currentState.icon ? "custom"  : "default" );
+        const folders = { ...Settings.current.folders };
+        if (iconType === "custom"  && currentState.icon) {
+            folders[folderId] = { icon: currentState.icon, always: currentState.always };
             Settings.update({ folders });
         }
-        else if ((state.iconType === "default"  || !state.icon) && folders[folderId]) {
+        else if ((iconType === "default"  || !currentState.icon) && folders[folderId]) {
             delete folders[folderId];
             Settings.update({ folders });
         }
@@ -537,30 +466,36 @@ const mountFolderSettingsPatch = ({ context, }) => {
     });
 };
 const renderFolderSettingsPatch = ({ context, result, }) => {
+    if (!SettingItem || !RadioInput) {
+        warn("Unable to patch FolderSettings: missing modal components");
+        return;
+    }
     const { props: { folderId }, state, } = context;
+    const iconType = state.iconType ?? (state.icon ? "custom"  : "default" );
     const [parent] = queryTreeForParent(result, (node) => node?.type === TextInput);
     if (!parent) {
         warn("Unable to find text input parent");
         return;
     }
-    const iconType = state.iconType ?? (state.icon ? "custom"  : "default" );
     const { children } = parent.props;
-    children.push(React.createElement(FormSwitch, { checked: iconType === "custom" , label: "Custom Icon", onChange: (checked) => context.setState({ iconType: checked ? "custom"  : "default"  }) }));
+    children.push(React.createElement(SettingItem, { id: "iconType", name: "Icon" },
+        React.createElement(RadioInput, { key: iconType, name: "Icon", value: iconType, options: [
+                { value: "default" , name: "Default Icon" },
+                { value: "custom" , name: "Custom Icon" },
+            ], onChange: (value) => context.setState({ iconType: value }) })));
     if (iconType === "custom" ) {
         const tree = SortedGuildStore.getGuildsTree();
-        children.push(React.createElement("div", { style: { marginTop: 20 } },
+        children.push(React.createElement(SettingItem, { id: "customIcon", name: "Custom Icon" },
             React.createElement(BetterFolderUploader, { icon: state.icon ?? "", always: state.always, folderNode: tree.nodes[folderId], onChange: ({ icon, always }) => context.setState({ icon, always }) })));
     }
 };
 
 const guildStyles = byKeys(["guilds", "base"]);
-const folderIconWrapperFilter = bySource$1((source) => {
-    return (source.includes("folderNode:")
-        && (source.includes("folderName") || source.includes(".folderName"))
-        && (source.includes("folderGroupId:")
-            || source.includes("folderIconWrapper")
-            || source.includes("expandedFolderIconWrapper")));
-});
+const folderListItemPrefix = "guildsnav___";
+const customIconSelector = "[data-better-folders-custom-icon]";
+let syncFrame = null;
+let folderObserver = null;
+let removeSettingsListener = null;
 const getGuildsOwner = () => {
     const node = document.getElementsByClassName(guildStyles.guilds)?.[0];
     if (node) {
@@ -577,39 +512,146 @@ const getGuildsOwner = () => {
 };
 const triggerRerender = async (guildsFiber) => {
     if (guildsFiber && (await forceFullRerender(guildsFiber))) {
-        log("Rerendered guilds");
+        console.log("Rerendered guilds");
     }
     else {
-        warn("Unable to rerender guilds");
+        console.warn("Unable to rerender guilds");
     }
+};
+const getFolderId = (button) => {
+    const listItemId = button.getAttribute("data-list-item-id");
+    if (!listItemId?.startsWith(folderListItemPrefix)) {
+        return null;
+    }
+    const folderId = Number(listItemId.slice(folderListItemPrefix.length));
+    return Number.isFinite(folderId) ? folderId : null;
+};
+const resetIconContainer = (container) => {
+    const customIcon = container?.querySelector(customIconSelector);
+    customIcon?.remove();
+    for (const child of Array.from(container?.children ?? [])) {
+        child.style.display = "";
+    }
+};
+const getFolderFrame = (button) => {
+    return Array.from(button.children).find((child) => {
+        if (!(child instanceof HTMLElement)) {
+            return false;
+        }
+        return child.className.includes("wrapper_") && Boolean(child.style.width || child.style.height);
+    }) ?? null;
+};
+const hasRenderedFolderSize = (frame) => {
+    const rect = frame.getBoundingClientRect();
+    const width = rect.width || Number.parseFloat(frame.style.width);
+    const height = rect.height || Number.parseFloat(frame.style.height);
+    return width > 0 && height > 0;
+};
+const resetIconFrame = (frame) => {
+    resetIconContainer(frame);
+    if (frame?.dataset.betterFoldersPositioned) {
+        frame.style.position = "";
+        delete frame.dataset.betterFoldersPositioned;
+    }
+};
+const applyIconFrame = (frame, icon, enabled) => {
+    if (!frame) {
+        return;
+    }
+    if (!enabled) {
+        resetIconFrame(frame);
+        return;
+    }
+    if (!hasRenderedFolderSize(frame)) {
+        resetIconFrame(frame);
+        return;
+    }
+    if (!frame.style.position) {
+        frame.dataset.betterFoldersPositioned = "true";
+        frame.style.position = "relative";
+    }
+    let customIcon = Array.from(frame.children)
+        .find((child) => child instanceof HTMLElement && child.matches(customIconSelector)) ?? null;
+    if (!customIcon) {
+        customIcon = document.createElement("div");
+        customIcon.className = styles.customIcon;
+        customIcon.setAttribute("data-better-folders-custom-icon", "true");
+        frame.append(customIcon);
+    }
+    customIcon.style.backgroundImage = `url(${icon})`;
+    for (const child of Array.from(frame.children)) {
+        if (child !== customIcon) {
+            child.style.display = "none";
+        }
+    }
+};
+const syncFolderButton = (button) => {
+    const folderId = getFolderId(button);
+    if (!folderId) {
+        return;
+    }
+    const data = Settings.current.folders[folderId];
+    const frame = getFolderFrame(button);
+    const content = button.querySelector('[class*="folderButtonContent"]');
+    const iconWrapper = button.querySelector('[class*="folderIconWrapper"]');
+    const previewWrapper = button.querySelector('[class*="folderPreviewWrapper"]');
+    const expanded = button.getAttribute("aria-expanded") === "true";
+    resetIconContainer(content);
+    resetIconContainer(iconWrapper);
+    resetIconContainer(previewWrapper);
+    if (!data?.icon) {
+        resetIconFrame(frame);
+        return;
+    }
+    applyIconFrame(frame, data.icon, data.always || expanded);
+};
+const syncFolderIcons = () => {
+    document.querySelectorAll(`[data-list-item-id^="${folderListItemPrefix}"][aria-owns^="folder-items-"]`)
+        .forEach(syncFolderButton);
+};
+const scheduleFolderIconSync = () => {
+    if (syncFrame !== null) {
+        return;
+    }
+    syncFrame = window.requestAnimationFrame(() => {
+        syncFrame = null;
+        syncFolderIcons();
+    });
+};
+const stopFolderIconSync = () => {
+    if (syncFrame !== null) {
+        window.cancelAnimationFrame(syncFrame);
+        syncFrame = null;
+    }
+    folderObserver?.disconnect();
+    folderObserver = null;
+    removeSettingsListener?.();
+    removeSettingsListener = null;
+    document.querySelectorAll(`[data-list-item-id^="${folderListItemPrefix}"][aria-owns^="folder-items-"]`)
+        .forEach((button) => {
+        resetIconFrame(getFolderFrame(button));
+        resetIconContainer(button.querySelector('[class*="folderButtonContent"]'));
+        resetIconContainer(button.querySelector('[class*="folderIconWrapper"]'));
+        resetIconContainer(button.querySelector('[class*="folderPreviewWrapper"]'));
+    });
+};
+const startFolderIconSync = () => {
+    stopFolderIconSync();
+    syncFolderIcons();
+    removeSettingsListener = Settings.addListenerEffect(() => scheduleFolderIconSync());
+    folderObserver = new MutationObserver(() => scheduleFolderIconSync());
+    folderObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["aria-expanded", "aria-owns", "class", "data-list-item-id"],
+    });
 };
 const index = createPlugin({
     start() {
-        let FolderIcon = null;
         const guildsOwner = getGuildsOwner();
-        waitFor(byEntry(folderIconWrapperFilter), { resolve: false }).then((result) => {
-            if (!result) {
-                error("Unable to find FolderIconWrapper module");
-                return;
-            }
-            const FolderIconWrapper = resolveKey(result, folderIconWrapperFilter);
-            if (!FolderIconWrapper[0] || !FolderIconWrapper[1]) {
-                error("Unable to find FolderIconWrapper module");
-                return;
-            }
-            after(...FolderIconWrapper, ({ args: [props], result }) => {
-                const icon = queryTree(result, (node) => node?.props?.folderNode);
-                if (!icon) {
-                    return error("Unable to find FolderIcon component");
-                }
-                if (!FolderIcon) {
-                    log("Found FolderIcon component");
-                    FolderIcon = icon.type;
-                }
-                replaceElement(icon, React.createElement(ConnectedBetterFolderIcon, { folderId: props.folderNode.id, childProps: icon.props, FolderIcon: FolderIcon }));
-            }, { name: "FolderIconWrapper" });
-            triggerRerender(guildsOwner);
-        });
+        startFolderIconSync();
+        triggerRerender(guildsOwner);
         after(ClientActions, "toggleGuildFolderExpand", ({ original, args: [folderId] }) => {
             if (Settings.current.closeOnOpen) {
                 for (const id of ExpandedGuildFolderStore.getExpandedFolders()) {
@@ -630,20 +672,22 @@ const index = createPlugin({
         });
     },
     stop() {
+        stopFolderIconSync();
         triggerRerender(getGuildsOwner());
     },
     styles: css,
     Settings,
     SettingsPanel: () => {
         const [{ closeOnOpen }, setSettings] = Settings.useState();
-        return (React.createElement(FormSwitch, { label: "Close on open", description: "Close other folders when opening a new folder", checked: closeOnOpen, onChange: (checked) => {
-                if (checked) {
-                    for (const id of Array.from(ExpandedGuildFolderStore.getExpandedFolders()).slice(1)) {
-                        ClientActions.toggleGuildFolderExpand(id);
+        return (React.createElement(SettingItem, { id: "closeOnOpen", name: "Close on open", note: "Close other folders when opening a new folder", inline: true },
+            React.createElement(SwitchInput, { id: "closeOnOpen", value: closeOnOpen, onChange: (checked) => {
+                    if (checked) {
+                        for (const id of Array.from(ExpandedGuildFolderStore.getExpandedFolders()).slice(1)) {
+                            ClientActions.toggleGuildFolderExpand(id);
+                        }
                     }
-                }
-                setSettings({ closeOnOpen: checked });
-            } }));
+                    setSettings({ closeOnOpen: checked });
+                } })));
     },
 });
 

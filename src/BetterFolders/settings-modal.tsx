@@ -1,6 +1,6 @@
 import { React, Logger, Utils, PatchDataWithResult } from "dium";
 import { SortedGuildStore, GuildsTreeFolder } from "@dium/modules";
-import { FormSwitch, TextInput } from "@dium/components";
+import { BD, TextInput } from "@dium/components";
 import { BetterFolderUploader } from "./uploader";
 import { FolderData, Settings } from "./settings";
 
@@ -57,11 +57,13 @@ export const mountFolderSettingsPatch = ({
         const result = original(...args);
 
         // update folder if necessary
-        const { folders } = Settings.current;
-        if (state.iconType === IconType.Custom && state.icon) {
-            folders[folderId] = { icon: state.icon, always: state.always };
+        const currentState = context.state;
+        const iconType = currentState.iconType ?? (currentState.icon ? IconType.Custom : IconType.Default);
+        const folders = { ...Settings.current.folders };
+        if (iconType === IconType.Custom && currentState.icon) {
+            folders[folderId] = { icon: currentState.icon, always: currentState.always };
             Settings.update({ folders });
-        } else if ((state.iconType === IconType.Default || !state.icon) && folders[folderId]) {
+        } else if ((iconType === IconType.Default || !currentState.icon) && folders[folderId]) {
             delete folders[folderId];
             Settings.update({ folders });
         }
@@ -82,10 +84,16 @@ export const renderFolderSettingsPatch = ({
     context,
     result,
 }: PatchDataWithResult<FolderSettings["render"], FolderSettings>): void => {
+    if (!BD.SettingItem || !BD.RadioInput) {
+        Logger.warn("Unable to patch FolderSettings: missing modal components");
+        return;
+    }
+
     const {
         props: { folderId },
         state,
     } = context;
+    const iconType = state.iconType ?? (state.icon ? IconType.Custom : IconType.Default);
 
     const [parent] = Utils.queryTreeForParent(result, (node) => node?.type === TextInput);
     if (!parent) {
@@ -93,29 +101,34 @@ export const renderFolderSettingsPatch = ({
         return;
     }
 
-    const iconType = state.iconType ?? (state.icon ? IconType.Custom : IconType.Default);
-
     // inject our elements
     const { children } = parent.props;
     children.push(
-        <FormSwitch
-            checked={iconType === IconType.Custom}
-            label="Custom Icon"
-            onChange={(checked) => context.setState({ iconType: checked ? IconType.Custom : IconType.Default })}
-        />,
+        <BD.SettingItem id="iconType" name="Icon">
+            <BD.RadioInput
+                key={iconType}
+                name="Icon"
+                value={iconType}
+                options={[
+                    { value: IconType.Default, name: "Default Icon" },
+                    { value: IconType.Custom, name: "Custom Icon" },
+                ]}
+                onChange={(value: IconType) => context.setState({ iconType: value })}
+            />
+        </BD.SettingItem>,
     );
 
     if (iconType === IconType.Custom) {
         const tree = SortedGuildStore.getGuildsTree();
         children.push(
-            <div style={{ marginTop: 20 }}>
+            <BD.SettingItem id="customIcon" name="Custom Icon">
                 <BetterFolderUploader
                     icon={state.icon ?? ""}
                     always={state.always}
                     folderNode={tree.nodes[folderId] as GuildsTreeFolder}
                     onChange={({ icon, always }) => context.setState({ icon, always })}
                 />
-            </div>,
+            </BD.SettingItem>,
         );
     }
 };
