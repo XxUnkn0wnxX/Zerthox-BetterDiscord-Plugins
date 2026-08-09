@@ -18,8 +18,6 @@ export interface FormNotice extends React.FunctionComponent<FormNoticeProps> {
     Types: Record<FormNoticeType, string>;
 }
 
-export const FormNotice: FormNotice = /* @__PURE__ */ Finder.bySource(["imageData:", "button:"], { entries: true });
-
 export const enum FormTags {
     H1 = "h1",
     H2 = "h2",
@@ -48,17 +46,14 @@ export type FormItem = React.FunctionComponent<FormItemProps>;
 export const FormItem: FormItem = /* @__PURE__ */ Finder.bySource(["titleClassName:", "required:"], { entries: true });
 
 export interface FormTitleProps {
-    type?: string;
     title: string;
-    titleTrailingIcon?: any;
     subtitle?: string;
+    decoration?: any;
+    subtitleDecoration?: any;
+    persistentBadge?: any;
 }
 
 export type FormTitle = React.FunctionComponent<FormTitleProps>;
-
-export const FormTitle: FormTitle = /* @__PURE__ */ Finder.bySource(["titleTrailingIcon:", "type:"], {
-    entries: true,
-});
 
 export interface FormControlProps {
     id?: any;
@@ -87,16 +82,15 @@ export interface FormSwitchProps extends Omit<
     "disabled" | "layoutConfig" | "trailingAuxiliaryContent" | "children"
 > {
     checked?: boolean;
-    required?: boolean;
-    disabled?: boolean;
+    displayOnly?: boolean;
     onChange?: (checked: boolean) => void;
     focusProp?: any;
-    innerRef?: any;
+    hasIcon?: boolean;
 }
 
 export type FormSwitch = React.FunctionComponent<FormSwitchProps>;
 
-export const FormSwitch: FormSwitch = /* @__PURE__ */ Finder.bySource(["checked:", "innerRef:", "layout:"], {
+export const FormSwitch: FormSwitch = /* @__PURE__ */ Finder.bySource(["checked:", "onChange:", "layout:"], {
     entries: true,
 });
 
