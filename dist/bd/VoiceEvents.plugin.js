@@ -1,13 +1,12 @@
 /**
  * @name VoiceEvents
- * @version 2.8.5
+ * @version 2.8.6
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Adds TTS Event Notifications to your selected Voice Channel. TeamSpeak feeling.
  * @website https://github.com/Zerthox/BetterDiscord-Plugins
  * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/VoiceEvents
 **/
-
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];
 var shell = WScript.CreateObject("WScript.Shell");
@@ -153,7 +152,7 @@ const GuildMemberStore = /* @__PURE__ */ byName("GuildMemberStore");
 const MediaEngineStore = /* @__PURE__ */ byName("MediaEngineStore");
 
 const { React } = BdApi;
-const classNames = /* @__PURE__ */ find((exports$1) => exports$1 instanceof Object && exports$1.default === exports$1 && Object.keys(exports$1).length === 1);
+const classNames = /* @__PURE__ */ find((exports) => exports instanceof Object && exports.default === exports && Object.keys(exports).length === 1);
 
 const UserStore = /* @__PURE__ */ byName("UserStore");
 
@@ -164,7 +163,7 @@ const Button = /* @__PURE__ */ byKeys(["Colors", "Link"], { entries: true });
 const Flex = /* @__PURE__ */ byKeys(["Child", "Justify", "Align"], { entries: true });
 
 const FormItem = /* @__PURE__ */ bySource(["titleClassName:", "required:"], { entries: true });
-const FormSwitch = /* @__PURE__ */ bySource(["checked:", "innerRef:", "layout:"], {
+const FormSwitch = /* @__PURE__ */ bySource(["checked:", "onChange:", "layout:"], {
     entries: true,
 });
 const FormDivider = /* @__PURE__ */ bySource(["marginTop:", (source) => /{className:.,gap:.}=/.test(source)], {
@@ -631,5 +630,4 @@ const index = createPlugin({
 });
 
 module.exports = index;
-
 /*@end @*/

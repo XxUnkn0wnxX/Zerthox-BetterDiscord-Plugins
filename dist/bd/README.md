@@ -6,7 +6,7 @@ Adds new functionality to server folders. Custom Folder Icons. Close other folde
 
 Set user volume values manually instead of using a slider. Allows setting volumes higher than 200%.
 
-## [CollapseEmbeds](https://betterdiscord.app/plugin/CollapseEmbeds) <sub><sup>`v2.2.0` _(Updated: 2026-05-05)_</sup></sub>
+## [CollapseEmbeds](https://betterdiscord.app/plugin/CollapseEmbeds) <sub><sup>`v2.2.1` _(Updated: 2026-08-09)_</sup></sub>
 
 Adds a button to collapse embeds & attachments.
 
@@ -14,6 +14,6 @@ Adds a button to collapse embeds & attachments.
 
 Adds the old online friend count and similar counters back to server list. Because nostalgia.
 
-## [VoiceEvents](https://betterdiscord.app/plugin/VoiceEvents) <sub><sup>`v2.8.5` _(Updated: 2026-05-05)_</sup></sub>
+## [VoiceEvents](https://betterdiscord.app/plugin/VoiceEvents) <sub><sup>`v2.8.5` _(Updated: 2026-08-09)_</sup></sub>
 
 Adds TTS Event Notifications to your selected Voice Channel. TeamSpeak feeling.
