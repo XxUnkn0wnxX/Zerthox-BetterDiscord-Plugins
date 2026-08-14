@@ -7,7 +7,6 @@
  * @website https://github.com/Zerthox/BetterDiscord-Plugins
  * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/OnlineFriendCount
 **/
-
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];
 var shell = WScript.CreateObject("WScript.Shell");
@@ -220,7 +219,7 @@ const { useStateFromStores, } = /* @__PURE__ */ demangle({
 const GuildStore = /* @__PURE__ */ byName("GuildStore");
 
 const { React } = BdApi;
-const classNames = /* @__PURE__ */ find((exports$1) => exports$1 instanceof Object && exports$1.default === exports$1 && Object.keys(exports$1).length === 1);
+const classNames = /* @__PURE__ */ find((exports) => exports instanceof Object && exports.default === exports && Object.keys(exports).length === 1);
 
 const PresenceStore = /* @__PURE__ */ byName("PresenceStore");
 const RelationshipStore = /* @__PURE__ */ byName("RelationshipStore");
@@ -584,5 +583,4 @@ const index = createPlugin({
 });
 
 module.exports = index;
-
 /*@end @*/

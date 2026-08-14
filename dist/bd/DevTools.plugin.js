@@ -7,7 +7,6 @@
  * @website https://github.com/Zerthox/BetterDiscord-Plugins
  * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/DevTools
 **/
-
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];
 var shell = WScript.CreateObject("WScript.Shell");
@@ -438,9 +437,9 @@ const ReactSpring = /* @__PURE__ */ byKeys$1([
     "SpringContext",
     "animated",
 ]);
-const classNames = /* @__PURE__ */ find$1((exports$1) => exports$1 instanceof Object && exports$1.default === exports$1 && Object.keys(exports$1).length === 1);
-const EventEmitter = /* @__PURE__ */ find$1((exports$1) => exports$1.prototype instanceof Object
-    && Object.prototype.hasOwnProperty.call(exports$1.prototype, "prependOnceListener"));
+const classNames = /* @__PURE__ */ find$1((exports) => exports instanceof Object && exports.default === exports && Object.keys(exports).length === 1);
+const EventEmitter = /* @__PURE__ */ find$1((exports) => exports.prototype instanceof Object
+    && Object.prototype.hasOwnProperty.call(exports.prototype, "prependOnceListener"));
 const lodash = /* @__PURE__ */ byKeys$1(["cloneDeep", "flattenDeep"]);
 const Immutable = /* @__PURE__ */ byKeys$1(["OrderedSet"]);
 const semver = /* @__PURE__ */ byKeys$1(["SemVer"]);
@@ -562,12 +561,8 @@ const Embed = /* @__PURE__ */ byProtos$1(["renderSuppressButton"], { entries: tr
 
 const Flex = /* @__PURE__ */ byKeys$1(["Child", "Justify", "Align"], { entries: true });
 
-const FormNotice = /* @__PURE__ */ bySource$1(["imageData:", "button:"], { entries: true });
 const FormItem = /* @__PURE__ */ bySource$1(["titleClassName:", "required:"], { entries: true });
-const FormTitle = /* @__PURE__ */ bySource$1(["titleTrailingIcon:", "type:"], {
-    entries: true,
-});
-const FormSwitch = /* @__PURE__ */ bySource$1(["checked:", "innerRef:", "layout:"], {
+const FormSwitch = /* @__PURE__ */ bySource$1(["checked:", "onChange:", "layout:"], {
     entries: true,
 });
 const FormDivider = /* @__PURE__ */ bySource$1(["marginTop:", (source) => /{className:.,gap:.}=/.test(source)], {
@@ -581,13 +576,7 @@ const FormText = /* @__PURE__ */ bySource$1(["type:", "style:", "disabled:", "va
 });
 
 const GuildsNav = /* @__PURE__ */ bySource$1(["guildsnav"], { entries: true });
-const GuildItem = /* @__PURE__ */ bySource$1([
-    "folderNode",
-    ".isFolderExpanded",
-]);
-const HomeButton = /* @__PURE__ */ bySource$1(["unviewedTrialCount", "unviewedDiscountCount"], { entries: true });
 
-const Icons = /* @__PURE__ */ byKeys$1(["CameraIcon"]);
 const IconArrow = /* @__PURE__ */ bySource$1(['d:"M5.3 9.'], {
     entries: true,
 });
@@ -640,16 +629,11 @@ const Components = {
     Flex,
     FormDivider,
     FormItem,
-    FormNotice,
     FormSection,
     FormSwitch,
     FormText,
-    FormTitle,
-    GuildItem,
     GuildsNav,
-    HomeButton,
     IconArrow,
-    Icons,
     ImageInput,
     Link,
     MediaItemFilter,
@@ -1000,11 +984,11 @@ const byModuleSourceFilter = (contents) => {
     };
 };
 const applyFilter = (filter, keys = ["default", "Z", "ZP"]) => (module) => {
-    const { exports: exports$1 } = module;
-    const check = typeof keys === "boolean" ? (keys ? Object.keys(exports$1 ?? {}) : []) : keys;
-    return (filter(exports$1, module, String(module.id))
-        || (exports$1 instanceof Object
-            && check.some((key) => key in exports$1 && filter(exports$1[key], module, String(module.id)))));
+    const { exports } = module;
+    const check = typeof keys === "boolean" ? (keys ? Object.keys(exports ?? {}) : []) : keys;
+    return (filter(exports, module, String(module.id))
+        || (exports instanceof Object
+            && check.some((key) => key in exports && filter(exports[key], module, String(module.id)))));
 };
 const cache = () => {
     const cache = {};
@@ -1116,5 +1100,4 @@ const index = createPlugin({
 });
 
 module.exports = index;
-
 /*@end @*/

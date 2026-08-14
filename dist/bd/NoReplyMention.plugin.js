@@ -7,7 +7,6 @@
  * @website https://github.com/Zerthox/BetterDiscord-Plugins
  * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/NoReplyMention
 **/
-
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];
 var shell = WScript.CreateObject("WScript.Shell");
@@ -251,5 +250,4 @@ const index = createPlugin({
 });
 
 module.exports = index;
-
 /*@end @*/
