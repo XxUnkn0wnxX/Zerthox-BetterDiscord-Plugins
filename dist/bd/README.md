@@ -1,6 +1,6 @@
 # Plugins
 
-Built from [source commit a5ac9496c3e6262bc39dd4a0e7bc014e57da3353](https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/a5ac9496c3e6262bc39dd4a0e7bc014e57da3353).
+Built from [source commit 784e18e7c2b6b5eae656e6a5f3891ec825a119d6](https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/784e18e7c2b6b5eae656e6a5f3891ec825a119d6).
 
 - [BetterFolders](./BetterFolders.plugin.js) — v3.8.1: Adds new functionality to server folders. Custom Folder Icons. Close other folders on open.
 - [BetterVolume](./BetterVolume.plugin.js) — v3.2.4: Set user volume values manually instead of using a slider. Allows setting volumes higher than 200%.

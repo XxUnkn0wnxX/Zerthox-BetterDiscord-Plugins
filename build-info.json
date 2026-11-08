@@ -1,5 +1,5 @@
 {
-  "sha": "a5ac9496c3e6262bc39dd4a0e7bc014e57da3353",
+  "sha": "784e18e7c2b6b5eae656e6a5f3891ec825a119d6",
   "plugins": [
     {
       "name": "BetterFolders",
@@ -7,7 +7,7 @@
     },
     {
       "name": "BetterVolume",
-      "sha256": "56fe10e4d0a9b8554bc438fa7326484b98399806846c5ecaaeeaa66ae0f774fd"
+      "sha256": "c0e90558e244b9ce6e965e66362fb4f505bcceba9dada36a377b95190bcf28e5"
     },
     {
       "name": "CollapseEmbeds",
