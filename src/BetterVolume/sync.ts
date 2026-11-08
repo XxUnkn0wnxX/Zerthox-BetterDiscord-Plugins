@@ -40,17 +40,58 @@ const findAudioSettingsManager = (): AudioSettingsManager => {
 };
 
 const handleAudioSettingsManager = (AudioSettingsManager: AudioSettingsManager): void => {
-    originalHandler = AudioSettingsManager.actions[ActionType.AUDIO_SET_LOCAL_VOLUME];
-    const swapped = trySwapHandler(ActionType.AUDIO_SET_LOCAL_VOLUME, originalHandler, wrappedSettingsManagerHandler);
-    if (swapped) {
-        Logger.log(`Replaced AudioSettingsManager ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler`);
-
-        dispatchVolumeOverrides();
-
-        Dispatcher.subscribe(ActionType.USER_SETTINGS_PROTO_UPDATE, dispatchVolumeOverrides);
-        Logger.log(`Subscribed to ${ActionType.USER_SETTINGS_PROTO_UPDATE} events`);
-    } else {
+    const action = ActionType.AUDIO_SET_LOCAL_VOLUME;
+    const original = AudioSettingsManager.actions[action];
+    if (typeof original !== "function") {
         Logger.warn(`AudioSettingsManager ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler not present`);
+        return;
+    }
+
+    const subscriptions = Dispatcher._subscriptions[action];
+    const binding = volumeHandlerBinding;
+
+    // A connection event can arrive again while our wrapper remains installed.
+    // Confirm both function identity and dispatcher membership before reusing it.
+    if (binding?.original === original && subscriptions?.has(binding.wrapped)) {
+        if (subscriptions.has(original)) {
+            Dispatcher.unsubscribe(action, original);
+        }
+        syncVolumeOverrides();
+        return;
+    }
+
+    if (!subscriptions?.has(original)) {
+        Logger.warn(`AudioSettingsManager ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler not present`);
+        return;
+    }
+
+    const wrapped = createWrappedSettingsManagerHandler(original);
+    const swapped = trySwapHandler(action, original, wrapped);
+    if (!swapped || !hasSubscription(action, wrapped) || hasSubscription(action, original)) {
+        if (hasSubscription(action, wrapped)) {
+            Dispatcher.unsubscribe(action, wrapped);
+        }
+        if (!hasSubscription(action, original)) {
+            Dispatcher.subscribe(action, original);
+        }
+        Logger.warn(`AudioSettingsManager ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler not present`);
+        return;
+    }
+
+    // Retire the previous wrapper after confirming its replacement is installed.
+    if (binding && hasSubscription(action, binding.wrapped)) {
+        Dispatcher.unsubscribe(action, binding.wrapped);
+    }
+
+    volumeHandlerBinding = { original, wrapped };
+    Logger.log(`Replaced AudioSettingsManager ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler`);
+    syncVolumeOverrides();
+};
+
+const syncVolumeOverrides = (): void => {
+    dispatchVolumeOverrides();
+    if (subscribeOnce(ActionType.USER_SETTINGS_PROTO_UPDATE, dispatchVolumeOverrides)) {
+        Logger.log(`Subscribed to ${ActionType.USER_SETTINGS_PROTO_UPDATE} events`);
     }
 };
 
@@ -73,9 +114,16 @@ interface AudioSettingsManager {
     stores: Map<any, any>;
 }
 
-let originalHandler: Flux.ActionHandler<SetVolumeAction>;
+interface VolumeHandlerBinding {
+    original: Flux.ActionHandler<SetVolumeAction>;
+    wrapped: Flux.ActionHandler<SetVolumeAction>;
+}
 
-const wrappedSettingsManagerHandler: Flux.ActionHandler<SetVolumeAction> = (action) => {
+let volumeHandlerBinding: VolumeHandlerBinding | null = null;
+
+const createWrappedSettingsManagerHandler = (
+    originalHandler: Flux.ActionHandler<SetVolumeAction>,
+): Flux.ActionHandler<SetVolumeAction> => (action) => {
     const { userId, volume, context } = action;
     const isOverride = volume > MAX_VOLUME_AMP;
     if (isOverride) {
@@ -95,12 +143,21 @@ const wrappedSettingsManagerHandler: Flux.ActionHandler<SetVolumeAction> = (acti
     }
 };
 
+const hasSubscription = (action: string, handler: Flux.ActionHandler): boolean =>
+    Dispatcher._subscriptions[action]?.has(handler) ?? false;
+
+const subscribeOnce = (action: string, handler: Flux.ActionHandler): boolean => {
+    const wasSubscribed = hasSubscription(action, handler);
+    if (!wasSubscribed) Dispatcher.subscribe(action, handler);
+    return !wasSubscribed && hasSubscription(action, handler);
+};
+
 const trySwapHandler = <A extends Flux.Action>(
     action: Flux.Action["type"],
     prev: Flux.ActionHandler<A>,
     next: Flux.ActionHandler<A>,
 ): boolean => {
-    const isPresent = Dispatcher._subscriptions[action].has(prev);
+    const isPresent = Dispatcher._subscriptions[action]?.has(prev) ?? false;
     if (isPresent) {
         Dispatcher.unsubscribe(action, prev);
         Dispatcher.subscribe(action, next);
@@ -109,8 +166,9 @@ const trySwapHandler = <A extends Flux.Action>(
 };
 
 export const handleVolumeSync = (): void => {
-    Dispatcher.subscribe(ActionType.POST_CONNECTION_OPEN, postConnectionOpenHandler);
-    Logger.log(`Subscribed to ${ActionType.POST_CONNECTION_OPEN} events`);
+    if (subscribeOnce(ActionType.POST_CONNECTION_OPEN, postConnectionOpenHandler)) {
+        Logger.log(`Subscribed to ${ActionType.POST_CONNECTION_OPEN} events`);
+    }
 
     const AudioSettingsManager = findAudioSettingsManager();
     if (AudioSettingsManager) {
@@ -121,14 +179,23 @@ export const handleVolumeSync = (): void => {
 };
 
 export const resetVolumeSync = (): void => {
-    Dispatcher.unsubscribe(ActionType.POST_CONNECTION_OPEN, postConnectionOpenHandler);
+    if (hasSubscription(ActionType.POST_CONNECTION_OPEN, postConnectionOpenHandler)) {
+        Dispatcher.unsubscribe(ActionType.POST_CONNECTION_OPEN, postConnectionOpenHandler);
+    }
     Logger.log(`Unsubscribed from ${ActionType.POST_CONNECTION_OPEN} events`);
 
-    Dispatcher.unsubscribe(ActionType.USER_SETTINGS_PROTO_UPDATE, dispatchVolumeOverrides);
+    if (hasSubscription(ActionType.USER_SETTINGS_PROTO_UPDATE, dispatchVolumeOverrides)) {
+        Dispatcher.unsubscribe(ActionType.USER_SETTINGS_PROTO_UPDATE, dispatchVolumeOverrides);
+    }
     Logger.log(`Unsubscribed from ${ActionType.USER_SETTINGS_PROTO_UPDATE} events`);
 
-    const swapped = trySwapHandler(ActionType.AUDIO_SET_LOCAL_VOLUME, wrappedSettingsManagerHandler, originalHandler);
-    if (swapped) {
+    const binding = volumeHandlerBinding;
+    if (binding && hasSubscription(ActionType.AUDIO_SET_LOCAL_VOLUME, binding.wrapped)) {
+        Dispatcher.unsubscribe(ActionType.AUDIO_SET_LOCAL_VOLUME, binding.wrapped);
+        if (!hasSubscription(ActionType.AUDIO_SET_LOCAL_VOLUME, binding.original)) {
+            Dispatcher.subscribe(ActionType.AUDIO_SET_LOCAL_VOLUME, binding.original);
+        }
         Logger.log(`Reset ${ActionType.AUDIO_SET_LOCAL_VOLUME} handler`);
     }
+    volumeHandlerBinding = null;
 };
