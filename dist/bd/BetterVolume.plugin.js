@@ -4,8 +4,8 @@
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Set user volume values manually instead of using a slider. Allows setting volumes higher than 200%.
- * @website https://github.com/Zerthox/BetterDiscord-Plugins
- * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/BetterVolume
+ * @website https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins
+ * @source https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop/src/BetterVolume
 **/
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];

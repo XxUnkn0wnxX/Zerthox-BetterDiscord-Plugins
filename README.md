@@ -1,21 +1,5 @@
-# BetterDiscord Plugins
+# BetterDiscord Plugins downloads
 
-Plugins for the [BetterDiscord](https://betterdiscord.app) client modification for [Discord](https://discord.com).
+Built from [source commit a5ac9496c3e6262bc39dd4a0e7bc014e57da3353](https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/a5ac9496c3e6262bc39dd4a0e7bc014e57da3353). This fork is based on [Zerthox/BetterDiscord-Plugins](https://github.com/Zerthox/BetterDiscord-Plugins). Source and build instructions are on [develop](https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop).
 
-To get to the **distributed plugin files [click here](dist/bd/)**.
-
-## Building from source
-
-```sh
-# install dependencies
-npm install
-
-# build all plugins
-npm run build
-
-# build specific plugins
-npm run build -- BetterFolders BetterVolume
-
-# build plugin to BetterDiscord folder & watch for changes
-npm run dev -- BetterFolders
-```
+Download plugins from [dist/bd](dist/bd/) and place the plugin files in BetterDiscord's plugins folder.

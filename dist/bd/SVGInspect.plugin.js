@@ -4,8 +4,8 @@
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description View all SVG components bundled in Discord
- * @website https://github.com/Zerthox/BetterDiscord-Plugins
- * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/SVGInspect
+ * @website https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins
+ * @source https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop/src/SVGInspect
 **/
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];

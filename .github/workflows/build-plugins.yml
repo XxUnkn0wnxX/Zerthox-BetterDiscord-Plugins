@@ -4,40 +4,45 @@ on:
     workflow_dispatch:
     push:
         branches:
-            - master
+            - develop
         paths:
-            - .github/workflows/build-plugins.yml
-            - package.json
-            - package-lock.json
-            - rollup.config.ts
-            - tsconfig.json
-            - global.d.ts
-            - scripts/build.ts
-            - packages/**
-            - src/**
+            - "src/**"
+            - "packages/**"
+            - "scripts/**"
+            - "package.json"
+            - "package-lock.json"
+            - "rollup.config.ts"
+            - "tsconfig.json"
+            - "global.d.ts"
+            - "eslint.config.mjs"
+            - ".mocharc.json"
+            - ".github/**"
+            - "LICENSE"
+            - ".gitignore"
 
 permissions:
     contents: write
 
 concurrency:
-    group: build-plugins-${{ github.ref }}
-    cancel-in-progress: true
+    group: publish-master
+    cancel-in-progress: false
 
 jobs:
     build:
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/develop' && github.actor != 'github-actions[bot]'
         runs-on: ubuntu-latest
-
         steps:
-            - name: Checkout
+            - name: Checkout source commit
               uses: actions/checkout@v4
               with:
+                  ref: ${{ github.sha }}
                   fetch-depth: 0
 
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 22
+                  node-version: 24
+                  cache: npm
 
             - name: Install dependencies
               run: npm ci
@@ -48,137 +53,71 @@ jobs:
             - name: Lint
               run: npm run lint
 
-            - name: Determine build targets
-              id: targets
+            - name: Test publication
+              run: npm run test:publish
+
+            - name: Build all published plugins
+              run: npm run build -- --publication
+
+            - name: Publish distribution
+              id: publish
+              shell: bash
               env:
-                  EVENT_NAME: ${{ github.event_name }}
-                  EVENT_BEFORE: ${{ github.event.before }}
-                  EVENT_SHA: ${{ github.sha }}
+                  SOURCE_SHA: ${{ github.sha }}
+                  REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
               run: |
-                  declare -A published_map=()
-                  declare -A selected=()
-
-                  mapfile -t published < <(
-                    node -e '
-                    const fs = require("fs");
-                    const path = require("path");
-
-                    const srcDir = path.join(process.cwd(), "src");
-                    const entries = fs.readdirSync(srcDir, { withFileTypes: true })
-                      .filter((entry) => entry.isDirectory())
-                      .map((entry) => entry.name)
-                      .sort();
-
-                    for (const name of entries) {
-                      const pkgPath = path.join(srcDir, name, "package.json");
-                      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-                      if (pkg.betterdiscord?.publish !== false) {
-                        console.log(name);
-                      }
-                    }
-                    '
-                  )
-
-                  for plugin in "${published[@]}"; do
-                    published_map["$plugin"]=1
-                  done
-
-                  rebuild_all=false
-
-                  if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-                    rebuild_all=true
-                  elif [ -z "$EVENT_BEFORE" ] || [ "$EVENT_BEFORE" = "0000000000000000000000000000000000000000" ]; then
-                    rebuild_all=true
-                  else
-                    while IFS= read -r file; do
-                      [ -n "$file" ] || continue
-
-                      case "$file" in
-                        src/*)
-                          plugin="${file#src/}"
-                          plugin="${plugin%%/*}"
-                          if [ -n "${published_map[$plugin]}" ]; then
-                            selected["$plugin"]=1
-                          fi
-                          ;;
-                        packages/*|scripts/build.ts|package.json|package-lock.json|rollup.config.ts|tsconfig.json|global.d.ts)
-                          rebuild_all=true
-                          ;;
-                      esac
-                    done < <(git diff --name-only "$EVENT_BEFORE" "$EVENT_SHA")
-                  fi
-
-                  targets=()
-                  if [ "$rebuild_all" = true ]; then
-                    targets=("${published[@]}")
-                  else
-                    for plugin in "${published[@]}"; do
-                      if [ -n "${selected[$plugin]}" ]; then
-                        targets+=("$plugin")
-                      fi
-                    done
-                  fi
-
-                  if [ "${#targets[@]}" -eq 0 ]; then
-                    echo "should_build=false" >> "$GITHUB_OUTPUT"
-                    echo "No published plugin targets changed."
-                    exit 0
-                  fi
-
-                  echo "should_build=true" >> "$GITHUB_OUTPUT"
-                  {
-                    echo "targets<<EOF"
-                    printf '%s ' "${targets[@]}"
-                    echo
-                    echo "EOF"
-                  } >> "$GITHUB_OUTPUT"
-                  printf 'Building targets: %s\n' "${targets[*]}"
-
-            - name: Prepare dist directory
-              if: steps.targets.outputs.should_build == 'true'
-              run: |
-                  mkdir -p dist/bd
-
-            - name: Build plugins
-              if: steps.targets.outputs.should_build == 'true'
-              run: npm run build -- ${{ steps.targets.outputs.targets }}
-
-            - name: Commit updated distributables
-              if: steps.targets.outputs.should_build == 'true'
-              run: |
-                  git add -A dist/bd
-
-                  if git diff --cached --quiet; then
-                    echo "No distributable changes to commit."
-                    exit 0
-                  fi
-
+                  set -euo pipefail
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git commit -m "Build plugins"
-                  git push origin master
+                  git fetch origin +refs/heads/develop:refs/remotes/origin/develop +refs/heads/master:refs/remotes/origin/master
+                  node scripts/publish.mjs fresh "$GITHUB_WORKSPACE" "$SOURCE_SHA" origin/develop
+                  master_dir="$(mktemp -d)"
+                  stage_dir="$(mktemp -d)"
+                  git worktree add --detach "$master_dir" origin/master
+                  node scripts/publish.mjs stage "$GITHUB_WORKSPACE" "$stage_dir" "$SOURCE_SHA" "$REPOSITORY"
+                  node scripts/publish.mjs apply "$master_dir" "$stage_dir"
+                  git -C "$master_dir" add -A
+                  if ! git -C "$master_dir" diff --cached --quiet; then
+                    git -C "$master_dir" commit -m "Publish plugins from $SOURCE_SHA"
+                    git fetch origin +refs/heads/develop:refs/remotes/origin/develop
+                    node scripts/publish.mjs fresh "$GITHUB_WORKSPACE" "$SOURCE_SHA" origin/develop
+                    git -C "$master_dir" push origin HEAD:master
+                  else
+                    echo "Distribution already matches source commit $SOURCE_SHA."
+                  fi
+                  git fetch origin +refs/heads/develop:refs/remotes/origin/develop
+                  node scripts/publish.mjs fresh "$GITHUB_WORKSPACE" "$SOURCE_SHA" origin/develop
+                  echo "master_dir=$master_dir" >> "$GITHUB_OUTPUT"
+                  echo "dist_sha=$(git -C "$master_dir" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
             - name: Refresh rolling fork release
-              if: steps.targets.outputs.should_build == 'true'
+              shell: bash
               env:
                   GH_TOKEN: ${{ github.token }}
+                  DIST_SHA: ${{ steps.publish.outputs.dist_sha }}
+                  MASTER_DIR: ${{ steps.publish.outputs.master_dir }}
+                  SOURCE_SHA: ${{ github.sha }}
               run: |
+                  set -euo pipefail
                   TAG="Nightly-Fork"
-                  FULL_SHA="$(git rev-parse HEAD)"
-                  DIST_URL="https://github.com/$GITHUB_REPOSITORY/tree/master/dist/bd"
-                  read -r -a targets <<< "${{ steps.targets.outputs.targets }}"
-                  assets=()
-
-                  for plugin in "${targets[@]}"; do
-                    assets+=("dist/bd/${plugin}.plugin.js")
-                  done
-
-                  gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes || true
-                  git push origin ":refs/tags/$TAG" || true
-
-                  gh release create "$TAG" "${assets[@]}" \
+                  if response="$(gh api --include "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" 2>&1)"; then
+                    gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
+                  elif [[ ! "$response" =~ HTTP/[^[:space:]]+[[:space:]]404 ]]; then
+                    echo "$response" >&2
+                    exit 1
+                  fi
+                  set +e
+                  git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null
+                  tag_status=$?
+                  set -e
+                  if [ "$tag_status" -eq 0 ]; then
+                    git push origin ":refs/tags/$TAG"
+                  elif [ "$tag_status" -ne 2 ]; then
+                    exit "$tag_status"
+                  fi
+                  gh release create "$TAG" "$MASTER_DIR"/dist/bd/*.plugin.js \
                     --repo "$GITHUB_REPOSITORY" \
-                    --target "$FULL_SHA" \
+                    --target "$DIST_SHA" \
                     --title "Nightly-Fork" \
-                    --notes "Auto-built from commit $FULL_SHA. Browse the full published plugin set in [dist/bd]($DIST_URL) on master. This rolling release may only reflect the plugins rebuilt by the latest change set." \
+                    --notes "Built from source commit $SOURCE_SHA. Browse all published plugins in [dist/bd](https://github.com/$GITHUB_REPOSITORY/tree/master/dist/bd)." \
                     --latest

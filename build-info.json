@@ -1,0 +1,41 @@
+{
+  "sha": "a5ac9496c3e6262bc39dd4a0e7bc014e57da3353",
+  "plugins": [
+    {
+      "name": "BetterFolders",
+      "sha256": "5527bd98d6600461afb240242dc167d1443dbb37e58bc9a9f82e3185476303da"
+    },
+    {
+      "name": "BetterVolume",
+      "sha256": "56fe10e4d0a9b8554bc438fa7326484b98399806846c5ecaaeeaa66ae0f774fd"
+    },
+    {
+      "name": "CollapseEmbeds",
+      "sha256": "6fbbccdbdb350bd3fd4bfda506a613cfb3b2d79bdb5fde0d71de43036ab5f6d8"
+    },
+    {
+      "name": "DevTools",
+      "sha256": "17d1eab6a4bd371315e18cb0b76f4f122ee4988a0879bacf8121e3fd61648e2f"
+    },
+    {
+      "name": "Emulator",
+      "sha256": "2d4a4815b7b84ddad2a8250228ac7b40fe7144604c11585562cd478f4bcfbd90"
+    },
+    {
+      "name": "NoReplyMention",
+      "sha256": "366ca54cbb638b436ac2493b6b945aa744f48633261979af4714e382fa894011"
+    },
+    {
+      "name": "OnlineFriendCount",
+      "sha256": "ec0190a3be8d8bd3c21b7095b1810ad61a58bdccfbbad6c79642ea9880e292d3"
+    },
+    {
+      "name": "SVGInspect",
+      "sha256": "eaa5715e32380c24771b88e2406750982c5c5c477c941204dbaed456ab626a4e"
+    },
+    {
+      "name": "VoiceEvents",
+      "sha256": "a73399c7b97a25d271504350120362b8f0b564513bea4a5fca977e9a9f9178e1"
+    }
+  ]
+}

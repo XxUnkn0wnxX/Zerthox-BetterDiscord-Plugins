@@ -4,8 +4,8 @@
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Emulate Windows, MacOS, Linux or Browser on any platform.\nWARNING: Emulating a different platform may cause unwanted side effects. Use at own risk.
- * @website https://github.com/Zerthox/BetterDiscord-Plugins
- * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/Emulator
+ * @website https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins
+ * @source https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop/src/Emulator
 **/
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];

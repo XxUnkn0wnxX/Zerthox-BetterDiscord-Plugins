@@ -4,8 +4,8 @@
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Suppresses reply mentions.
- * @website https://github.com/Zerthox/BetterDiscord-Plugins
- * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/NoReplyMention
+ * @website https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins
+ * @source https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop/src/NoReplyMention
 **/
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];

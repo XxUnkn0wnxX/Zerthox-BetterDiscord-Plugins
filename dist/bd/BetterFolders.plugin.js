@@ -4,8 +4,8 @@
  * @author Zerthox
  * @authorLink https://github.com/Zerthox
  * @description Adds new functionality to server folders. Custom Folder Icons. Close other folders on open.
- * @website https://github.com/Zerthox/BetterDiscord-Plugins
- * @source https://github.com/Zerthox/BetterDiscord-Plugins/tree/master/src/BetterFolders
+ * @website https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins
+ * @source https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/tree/develop/src/BetterFolders
 **/
 /*@cc_on @if (@_jscript)
 var pluginName = WScript.ScriptName.split(".")[0];
