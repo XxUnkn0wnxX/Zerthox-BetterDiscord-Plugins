@@ -24,9 +24,10 @@ const fixture = (t) => {
         git(repo, "config", "user.email", "test@example.invalid");
         git(repo, "config", "commit.gpgsign", "false");
     }
-    put(source, ".gitignore", "/dist/\n");
+    put(source, ".gitignore", "/dist/\n.DS_Store\n");
     put(source, "LICENSE", "license");
     put(source, ".github/workflows/build-plugins.yml", "workflow");
+    put(source, ".github/.DS_Store", "local Finder metadata");
     for (const name of ["Alpha", "Beta"]) {
         put(source, `src/${name}/package.json`, packageJson(name));
         put(source, `dist/bd/${name}.plugin.js`, `built ${name}`);
@@ -44,6 +45,7 @@ test("stages the complete distribution, removes old source and stale outputs, an
     const f = fixture(t);
     assert.match(git(f.source, "check-ignore", "dist/bd/Alpha.plugin.js"), /Alpha\.plugin\.js/);
     stageDistribution(f.source, f.stage, f.sha, f.url);
+    assert.throws(() => readFileSync(path.join(f.stage, ".github/.DS_Store")));
     applyDistribution(f.master, f.stage);
     assert.deepEqual(readdirSync(path.join(f.master, "dist", "bd")).sort(), ["Alpha.plugin.js", "Beta.plugin.js", "README.md"]);
     assert.throws(() => readFileSync(path.join(f.master, "src/old.js")));
@@ -55,7 +57,7 @@ test("stages the complete distribution, removes old source and stale outputs, an
     rmSync(f.stage, { recursive: true }); mkdirSync(f.stage);
     stageDistribution(f.source, f.stage, f.sha, f.url);
     applyDistribution(f.master, f.stage);
-    assert.equal(git(f.master, "status", "--porcelain"), "");
+    assert.equal(git(f.master, "status", "--porcelain", "--ignored", "--untracked-files=all"), "");
 });
 
 test("missing, empty, modified, or missing-receipt output fails before master changes", (t) => {

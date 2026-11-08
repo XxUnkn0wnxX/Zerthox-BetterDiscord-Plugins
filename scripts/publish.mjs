@@ -94,7 +94,12 @@ export function stageDistribution(source, stage, sha, repository) {
     mkdirSync(path.join(stage, "dist", "bd"), { recursive: true });
     for (const { name } of plugins) cpSync(outputPath(source, name), path.join(stage, "dist", "bd", `${name}.plugin.js`));
     cpSync(required(path.join(source, "LICENSE")), path.join(stage, "LICENSE"));
-    cpSync(required(path.join(source, ".github")), path.join(stage, ".github"), { recursive: true });
+    const workflowFiles = git(source, "ls-files", "-z", "--", ".github").split("\0").filter(Boolean);
+    for (const file of workflowFiles) {
+        const destination = path.join(stage, file);
+        mkdirSync(path.dirname(destination), { recursive: true });
+        cpSync(required(path.join(source, file)), destination);
+    }
     writeFileSync(path.join(stage, ".gitignore"), "node_modules/\ntmp/\nAGENTS.md\nAGENTS.MD\n.venv/\n");
     writeFileSync(path.join(stage, "README.md"), `# BetterDiscord Plugins downloads\n\nBuilt from [source commit ${sha}](${repository}/tree/${sha}). This fork is based on [Zerthox/BetterDiscord-Plugins](https://github.com/Zerthox/BetterDiscord-Plugins). Source and build instructions are on [develop](${repository}/tree/develop).\n\nDownload plugins from [dist/bd](dist/bd/) and place the plugin files in BetterDiscord's plugins folder.\n`);
     writeFileSync(path.join(stage, "dist", "bd", "README.md"), `# Plugins\n\nBuilt from [source commit ${sha}](${repository}/tree/${sha}).\n\n${listing}\n`);
