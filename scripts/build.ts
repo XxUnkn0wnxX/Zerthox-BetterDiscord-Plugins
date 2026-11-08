@@ -1,5 +1,5 @@
 import path from "path";
-import { readdirSync } from "fs";
+import { readdirSync, rmSync } from "fs";
 import minimist from "minimist";
 import chalk from "chalk";
 import * as rollup from "rollup";
@@ -9,6 +9,7 @@ import bdMeta from "rollup-plugin-bd-meta";
 import bdWScript from "rollup-plugin-bd-wscript";
 import rollupConfig from "../rollup.config";
 import { repository } from "../package.json";
+import { assertSource, listPlugins, writeReceipt, receiptPath } from "./publish.mjs";
 
 const success = (msg: string) => console.log(chalk.green(msg));
 const warn = (msg: string) => console.warn(chalk.yellow(`Warn: ${msg}`));
@@ -19,11 +20,22 @@ const sourceFolder = path.resolve(import.meta.dirname, "../src");
 const sourceEntries = readdirSync(sourceFolder, { withFileTypes: true }).filter((entry) => entry.isDirectory());
 
 // parse args
-const args = minimist(process.argv.slice(2), { boolean: ["dev", "watch"] });
+const args = minimist(process.argv.slice(2), { boolean: ["dev", "watch", "publication"] });
+
+const projectRoot = path.resolve(import.meta.dirname, "..");
+if (args.publication && (args.dev || args.watch || args._.length)) {
+    throw new Error("Publication builds must build all published plugins without --dev or --watch");
+}
+const sourceSha = args.publication ? assertSource(projectRoot) : undefined;
+if (args.publication) {
+    rmSync(receiptPath(projectRoot), { force: true });
+}
 
 // resolve input paths
 let inputPaths: string[] = [];
-if (args._.length === 0) {
+if (args.publication) {
+    inputPaths = listPlugins(projectRoot).map(({ name }) => path.resolve(sourceFolder, name));
+} else if (args._.length === 0) {
     inputPaths = sourceEntries.map((entry) => path.resolve(sourceFolder, entry.name));
 } else {
     for (const name of args._) {
@@ -65,9 +77,11 @@ for (const inputPath of inputPaths) {
         watch(inputPath, outputPath).then(() => console.log(`Watching for changes in "${inputPath}"`));
     } else {
         // build once
-        build(inputPath, outputPath);
+        if (args.publication) rmSync(outputPath, { force: true });
+        await build(inputPath, outputPath);
     }
 }
+if (args.publication) writeReceipt(projectRoot, sourceSha);
 if (args.watch) {
     // keep process alive
     process.stdin.resume();
@@ -152,7 +166,7 @@ function generateRollupConfig(name: string, inputPath: string, outputPath: strin
             bdMeta({
                 meta: {
                     website: repository,
-                    source: `${repository}/tree/master/src/${path.basename(inputPath)}`,
+                    source: `${repository}/tree/develop/src/${path.basename(inputPath)}`,
                 },
                 authorGithub: true,
             }),

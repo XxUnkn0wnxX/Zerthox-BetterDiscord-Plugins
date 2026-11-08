@@ -73,5 +73,5 @@ export default defineConfig([
             "@typescript-eslint/no-explicit-any": "off",
         },
     },
-    globalIgnores(["**/node_modules/", "**/dist/"]),
+    globalIgnores(["**/node_modules/", "**/dist/", "**/.tmp/"]),
 ]);

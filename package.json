@@ -13,11 +13,12 @@
         "lint-fix": "eslint --max-warnings=0 --fix .",
         "format-check": "prettier --check .",
         "format-fix": "prettier --write .",
-        "test": "npm run test --workspaces --if-present"
+        "test": "npm run test --workspaces --if-present",
+        "test:publish": "node --test scripts/publish.test.mjs"
     },
-    "repository": "https://github.com/Zerthox/BetterDiscord-Plugins",
-    "bugs": "https://github.com/Zerthox/BetterDiscord-Plugins/issues",
-    "homepage": "https://github.com/Zerthox/BetterDiscord-Plugins#readme",
+    "repository": "https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins",
+    "bugs": "https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins/issues",
+    "homepage": "https://github.com/XxUnkn0wnxX/Zerthox-BetterDiscord-Plugins#readme",
     "workspaces": [
         "packages/*",
         "src/*"
